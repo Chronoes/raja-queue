@@ -15,7 +15,6 @@ defmodule RajaQueue.MixProject do
   def application do
     [
       mod: {RajaQueue, []},
-      applications: [:exirc],
       extra_applications: [:logger]
     ]
   end
