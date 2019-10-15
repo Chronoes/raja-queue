@@ -7,12 +7,23 @@ defmodule RajaQueue.MessageHandler do
   alias RajaQueue.QueueState
 
   @prefix "-"
+  @queue_delimiter " FBBlock "
+
   @queue_action "queue"
-  @add_action "add "
-  @bump_action "bump "
-  @prio_action "prio "
+  @add_action "add"
+  @bump_action "bump"
+  @prio_action "prio"
   @next_action "next"
   @clear_action "clear"
+  @help_action "help"
+
+  @help_doc ~s(#{@prefix}#{@queue_action} -> Show queue
+#{@prefix}#{@add_action} TEXT -> Add new item to the end
+#{@prefix}#{@bump_action} ID -> Bump existing item in queue to top
+#{@prefix}#{@prio_action} TEXT -> Add new item to top
+#{@prefix}#{@next_action} -> Clear topmost item
+#{@prefix}#{@clear_action} -> Clear all of queue
+#{@prefix}#{@help_action} -> Show this help)
 
   @spec handle_message(binary(), SenderInfo.t(), Config.t()) :: Config.t()
   def handle_message(@prefix <> msg, sender, config), do: handle_command(String.trim(msg), sender, config)
@@ -22,20 +33,20 @@ defmodule RajaQueue.MessageHandler do
     Client.msg(config.client, :privmsg, config.channel, msg)
   end
 
-  defp is_whitelisted?(%SenderInfo{nick: nick} = _sender), do: QueueState.is_whitelisted?(nick)
+  defp is_whitelisted?(%SenderInfo{nick: nick}), do: QueueState.is_whitelisted?(nick)
 
   defp do_queue(config, timeout \\ nil)
 
-  defp do_queue(config, timeout) when is_nil(timeout) do
+  defp do_queue(config, nil) do
     queue = QueueState.get_queue()
 
     unless PriorityQueue.empty?(queue) do
       queue_str =
         queue
-        |> Enum.map_join(" FBBlock ", fn {_prio, item} -> "#{item.action} (#{item.id})" end)
+        |> Enum.map_join(@queue_delimiter, fn {_prio, item} -> "#{item.action} (#{item.id})" end)
 
       send_message(config, queue_str)
-      Logger.info("Queue items messaged")
+      Logger.debug("Queue items messaged")
     end
 
     config
@@ -50,9 +61,9 @@ defmodule RajaQueue.MessageHandler do
   end
 
   @spec handle_command(binary(), SenderInfo.t(), Config.t()) :: Config.t()
-  def handle_command(@queue_action, _sender, config), do: do_queue(config, 60)
+  def handle_command(@queue_action <> _msg, _sender, config), do: do_queue(config, 60)
 
-  def handle_command(@add_action <> msg, sender, config) do
+  def handle_command("#{@add_action} " <> msg, sender, config) do
     if is_whitelisted?(sender) do
       QueueState.add_item(msg)
       Logger.info("Added \"#{msg}\" to queue")
@@ -62,7 +73,7 @@ defmodule RajaQueue.MessageHandler do
     end
   end
 
-  def handle_command(@bump_action <> id, sender, config) do
+  def handle_command("#{@bump_action} " <> id, sender, config) do
     if is_whitelisted?(sender) do
       {id, _} = Integer.parse(id)
 
@@ -73,14 +84,14 @@ defmodule RajaQueue.MessageHandler do
         item ->
           QueueState.bump_item(item)
           Logger.info("Bumped \"#{item.action}\" to top")
-          do_queue(config)
+          config
       end
     else
       config
     end
   end
 
-  def handle_command(@prio_action <> msg, sender, config) do
+  def handle_command("#{@prio_action} " <> msg, sender, config) do
     if is_whitelisted?(sender) do
       QueueState.add_item(msg, 1)
       Logger.info("Added priority \"#{msg}\" to queue")
@@ -90,7 +101,7 @@ defmodule RajaQueue.MessageHandler do
     end
   end
 
-  def handle_command(@next_action, sender, config) do
+  def handle_command(@next_action <> _msg, sender, config) do
     if is_whitelisted?(sender) do
       QueueState.pop_queue()
       Logger.info("Removed next item from queue")
@@ -100,10 +111,9 @@ defmodule RajaQueue.MessageHandler do
     end
   end
 
-  def handle_command(@clear_action, sender, config) do
+  def handle_command(@clear_action <> _msg, sender, config) do
     if is_whitelisted?(sender) do
       QueueState.clear_queue()
-      send_message(config, "Cleared queue")
       Logger.info("Cleared queue")
     end
 
