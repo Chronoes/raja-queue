@@ -7,9 +7,13 @@ defmodule RajaQueue.QueueState do
     defstruct current_id: 0,
               queue: PriorityQueue.new(),
               whitelist: [],
-              queue_displayed: nil
+              queue_displayed: nil,
+              state_file: ""
 
-    def from_json(%{"queue" => queue, "whitelist" => whitelist} = _map) do
+    @spec from_json(binary) :: __MODULE__.t()
+    def from_json(json) do
+      %{"queue" => queue, "whitelist" => whitelist} = Jason.decode!(json)
+
       prio_queue =
         queue
         |> Enum.with_index(1)
@@ -22,12 +26,25 @@ defmodule RajaQueue.QueueState do
         whitelist: whitelist
       }
     end
+
+    @spec to_json(__MODULE__.t()) :: any
+    def to_json(%__MODULE__{queue: queue, whitelist: whitelist}) do
+      Jason.encode!(%{
+        "queue" => queue |> Enum.map(fn {_prio, item} -> item.action end),
+        "whitelist" => whitelist
+      })
+    end
   end
 
   def start_link(opts) do
     {state_file, opts} = Keyword.pop(opts, :state_file)
-    state = Jason.decode!(File.read!(state_file))
-    Agent.start_link(fn -> State.from_json(state) end, opts)
+    state = File.read!(state_file)
+    Agent.start_link(fn -> %{State.from_json(state) | state_file: state_file} end, opts)
+  end
+
+  def persist do
+    state = Agent.get(__MODULE__, fn state -> state end)
+    File.write!(state.state_file, State.to_json(state))
   end
 
   @spec get_queue :: PriorityQueue.t()

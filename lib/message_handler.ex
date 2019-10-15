@@ -26,7 +26,17 @@ defmodule RajaQueue.MessageHandler do
 #{@prefix}#{@help_action} -> Show this help)
 
   @spec handle_message(binary(), SenderInfo.t(), Config.t()) :: Config.t()
-  def handle_message(@prefix <> msg, sender, config), do: handle_command(String.trim(msg), sender, config)
+  def handle_message(@prefix <> msg, sender, config) do
+    case handle_command(String.trim(msg), sender, config) do
+      {:persist, result} ->
+        QueueState.persist()
+        result
+
+      {:noaction, result} ->
+        result
+    end
+  end
+
   def handle_message(_msg, _sender, config), do: config
 
   defp send_message(config, msg) do
@@ -60,16 +70,22 @@ defmodule RajaQueue.MessageHandler do
     end
   end
 
-  @spec handle_command(binary(), SenderInfo.t(), Config.t()) :: Config.t()
-  def handle_command(@queue_action <> _msg, _sender, config), do: do_queue(config, 60)
+  @spec handle_command(binary(), SenderInfo.t(), Config.t()) :: {:noaction | :persist, Config.t()}
+  def handle_command(@queue_action <> _msg, sender, config) do
+    if is_whitelisted?(sender) do
+      {:noaction, do_queue(config)}
+    else
+      {:noaction, do_queue(config, 60)}
+    end
+  end
 
   def handle_command("#{@add_action} " <> msg, sender, config) do
     if is_whitelisted?(sender) do
       QueueState.add_item(msg)
       Logger.info("Added \"#{msg}\" to queue")
-      do_queue(config)
+      {:persist, do_queue(config)}
     else
-      config
+      {:noaction, config}
     end
   end
 
@@ -79,15 +95,15 @@ defmodule RajaQueue.MessageHandler do
 
       case QueueState.find_item(id) do
         nil ->
-          config
+          {:noaction, config}
 
         item ->
           QueueState.bump_item(item)
           Logger.info("Bumped \"#{item.action}\" to top")
-          config
+          {:persist, config}
       end
     else
-      config
+      {:noaction, config}
     end
   end
 
@@ -95,9 +111,9 @@ defmodule RajaQueue.MessageHandler do
     if is_whitelisted?(sender) do
       QueueState.add_item(msg, 1)
       Logger.info("Added priority \"#{msg}\" to queue")
-      do_queue(config)
+      {:persist, do_queue(config)}
     else
-      config
+      {:noaction, config}
     end
   end
 
@@ -105,9 +121,9 @@ defmodule RajaQueue.MessageHandler do
     if is_whitelisted?(sender) do
       QueueState.pop_queue()
       Logger.info("Removed next item from queue")
-      do_queue(config)
+      {:persist, do_queue(config)}
     else
-      config
+      {:noaction, config}
     end
   end
 
@@ -115,13 +131,14 @@ defmodule RajaQueue.MessageHandler do
     if is_whitelisted?(sender) do
       QueueState.clear_queue()
       Logger.info("Cleared queue")
+      {:persist, config}
+    else
+      {:noaction, config}
     end
-
-    config
   end
 
   def handle_command(cmd, _sender, config) do
     Logger.debug("Unknown command: #{cmd}")
-    config
+    {:noaction, config}
   end
 end
