@@ -15,6 +15,7 @@ defmodule RajaQueue.MessageHandler do
   @prio_action "prio"
   @next_action "next"
   @clear_action "clear"
+  @whitelist_action "whitelist"
   @help_action "help"
 
   @help_doc ~s(#{@prefix}#{@queue_action} -> Show queue
@@ -23,6 +24,7 @@ defmodule RajaQueue.MessageHandler do
 #{@prefix}#{@prio_action} TEXT -> Add new item to top
 #{@prefix}#{@next_action} -> Clear topmost item
 #{@prefix}#{@clear_action} -> Clear all of queue
+#{@prefix}#{@whitelist_action} NICK -> Add NICK to whitelist
 #{@prefix}#{@help_action} -> Show this help)
 
   @spec handle_message(binary(), SenderInfo.t(), Config.t()) :: Config.t()
@@ -131,6 +133,17 @@ defmodule RajaQueue.MessageHandler do
     if is_whitelisted?(sender) do
       QueueState.clear_queue()
       Logger.info("Cleared queue")
+      {:persist, config}
+    else
+      {:noaction, config}
+    end
+  end
+
+  def handle_command("#{@whitelist_action} " <> msg, sender, config) do
+    if is_whitelisted?(sender) do
+      QueueState.whitelist_user(String.downcase(msg))
+      send_message(config, "Whitelisted @#{msg}")
+      Logger.info("Whitelisted #{msg}")
       {:persist, config}
     else
       {:noaction, config}

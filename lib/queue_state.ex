@@ -122,4 +122,8 @@ defmodule RajaQueue.QueueState do
         end
     end)
   end
+
+  def whitelist_user(user) do
+    Agent.update(__MODULE__, fn state -> %{state | whitelist: [user | state.whitelist]} end)
+  end
 end
