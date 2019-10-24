@@ -28,7 +28,7 @@ defmodule RajaQueue.MessageHandler do
 #{@prefix}#{@add_action} TEXT -> Add new item to the end
 #{@prefix}#{@bump_action} ID -> Bump existing item in queue to top
 #{@prefix}#{@prio_action} TEXT -> Add new item to top
-#{@prefix}#{@remove_action}|#{@prefix}#{@remove_alt_action} ID -> Remove item from queue
+#{@prefix}#{@remove_action},#{@prefix}#{@remove_alt_action} ID -> Remove item from queue
 #{@prefix}#{@next_action} -> Clear topmost item
 #{@prefix}#{@clear_action} -> Clear all of queue
 #{@prefix}#{@whitelist_action} NICK -> Add NICK to whitelist
@@ -185,6 +185,13 @@ defmodule RajaQueue.MessageHandler do
     else
       {:noaction, config}
     end
+  end
+
+  def handle_command(@help_action <> _msg, _sender, config) do
+    help_doc = @help_doc |> String.replace("\n", " | ")
+    # Client.msg(config.client, :privmsg, nick, help_doc)
+    Client.msg(config.client, :privmsg, "##{config.nick}", help_doc)
+    {:noaction, config}
   end
 
   def handle_command(cmd, _sender, config) do

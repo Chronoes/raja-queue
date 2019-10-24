@@ -75,6 +75,9 @@ defmodule RajaQueue.Bot do
     Logger.debug("Logged in to #{config.server}:#{config.port}")
     Logger.debug("Joining #{config.channel}..")
     Client.join(config.client, config.channel)
+    own_channel = "##{config.nick}"
+    Logger.debug("Joining own channel #{own_channel}..")
+    Client.join(config.client, own_channel)
     {:noreply, config}
   end
 
