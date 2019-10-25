@@ -11,7 +11,7 @@ config :raja_queue,
     :pass => "",
     :user => "RajaQ",
     :name => "RajaQueue Bot",
-    :channel => "#fairlight_excalibur"
+    :channel => "#chronoes"
   },
   state_file: "state.json"
 
