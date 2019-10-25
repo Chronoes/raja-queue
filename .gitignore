@@ -24,3 +24,6 @@ raja_queue-*.tar
 
 # Language server files
 .elixir_ls
+
+# Secrets file
+/config/config.secret.exs

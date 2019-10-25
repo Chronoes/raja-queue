@@ -26,9 +26,11 @@ defmodule RajaQueue.Bot do
   alias ExIRC.Client
   alias ExIRC.SenderInfo
 
-  def start_link(%{:nick => nick} = params) when is_map(params) do
+  alias RajaQueue.TwitchAPI
+
+  def start_link(params, opts) when is_map(params) do
     config = Config.from_params(params)
-    GenServer.start_link(__MODULE__, [config], name: String.to_atom(nick))
+    GenServer.start_link(__MODULE__, [config], opts)
   end
 
   @spec init([Config.t()]) :: {:ok, Config.t()}
@@ -44,6 +46,16 @@ defmodule RajaQueue.Bot do
     Client.connect!(client, config.server, config.port)
 
     {:ok, %Config{config | :client => client}}
+  end
+
+  @spec send_message(pid :: GenServer.server(), message :: binary()) :: :ok
+  def send_message(pid, message) do
+    GenServer.cast(pid, {:privmsg, message})
+  end
+
+  def handle_cast({:privmsg, message}, config) do
+    Client.msg(config.client, :privmsg, config.channel, message)
+    {:noreply, config}
   end
 
   @doc """
@@ -92,9 +104,14 @@ defmodule RajaQueue.Bot do
     {:stop, :normal, config}
   end
 
+  def handle_info({:joined, channel}, %Config{channel: conf_channel} = config) when conf_channel == channel do
+    Logger.debug("Joined #{channel}")
+    TwitchAPI.check_stream_status()
+    {:noreply, config}
+  end
+
   def handle_info({:joined, channel}, config) do
     Logger.debug("Joined #{channel}")
-    # Client.msg(config.client, :privmsg, config.channel, "Hello world!")
     {:noreply, config}
   end
 

@@ -3,7 +3,7 @@ defmodule RajaQueue.MessageHandler do
 
   alias ExIRC.Client
   alias ExIRC.SenderInfo
-  alias RajaQueue.Bot.Config
+  alias RajaQueue.Bot
   alias RajaQueue.QueueState
 
   @prefix "-"
@@ -34,7 +34,7 @@ defmodule RajaQueue.MessageHandler do
 #{@prefix}#{@whitelist_action} NICK -> Add NICK to whitelist
 #{@prefix}#{@help_action} -> Show this help)
 
-  @spec handle_message(binary(), SenderInfo.t(), Config.t()) :: Config.t()
+  @spec handle_message(binary(), SenderInfo.t(), Bot.Config.t()) :: Bot.Config.t()
   def handle_message(@prefix <> msg, sender, config) do
     case handle_command(String.trim(msg), sender, config) do
       {:persist, result} ->
@@ -49,7 +49,7 @@ defmodule RajaQueue.MessageHandler do
   def handle_message(_msg, _sender, config), do: config
 
   defp send_message(config, msg) do
-    Client.msg(config.client, :privmsg, config.channel, msg)
+    Bot.handle_cast({:privmsg, msg}, config)
   end
 
   defp is_whitelisted?(%SenderInfo{nick: nick}), do: QueueState.is_whitelisted?(nick)
@@ -101,7 +101,7 @@ defmodule RajaQueue.MessageHandler do
     end
   end
 
-  @spec handle_command(binary(), SenderInfo.t(), Config.t()) :: {:noaction | :persist, Config.t()}
+  @spec handle_command(binary(), SenderInfo.t(), Bot.Config.t()) :: {:noaction | :persist, Bot.Config.t()}
   def handle_command(@queue_action <> _msg, sender, config) do
     if is_whitelisted?(sender) do
       {:noaction, do_queue(config)}

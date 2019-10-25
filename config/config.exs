@@ -3,19 +3,28 @@
 use Mix.Config
 
 config :raja_queue,
-  bots: [
-    %{
-      :server => "irc.chat.twitch.tv",
-      :port => 6667,
-      :ssl? => false,
-      :nick => "rajaq",
-      :pass => "oauth:9cypmzpo96lexoz15e28g3cd7dknli",
-      :user => "RajaQ",
-      :name => "RajaQueue Bot",
-      :channel => "#fairlight_excalibur"
-    }
-  ],
+  bot: %{
+    :server => "irc.chat.twitch.tv",
+    :port => 6667,
+    :ssl? => false,
+    :nick => "rajaq",
+    :pass => "",
+    :user => "RajaQ",
+    :name => "RajaQueue Bot",
+    :channel => "#fairlight_excalibur"
+  },
   state_file: "state.json"
+
+config :raja_queue, RajaQueue.TwitchAPI,
+  client_id: "69j22qmzkmubds5bj763fknl6bxr2r",
+  # Chronoes
+  # user_id: "25434785"
+  # Fairlight_Excalibur
+  user_id: "54989347"
+
+config :tesla, adapter: Tesla.Adapter.Hackney
+
+import_config "config.secret.exs"
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
