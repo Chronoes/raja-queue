@@ -16,7 +16,7 @@ defmodule RajaQueue.TwitchAPI do
     end
   end
 
-  @offline_check 3 * 60 * 1000
+  @offline_check 5 * 60 * 1000
   @online_check 60 * 60 * 1000
 
   def start_link([params, opts]) do
@@ -34,9 +34,22 @@ defmodule RajaQueue.TwitchAPI do
     Kernel.send(__MODULE__, :stream_check)
   end
 
-  def handle_call(:stream_online, config) do
+  def handle_call({:stream_online, since}, config) do
     unless config.stream_online do
-      Bot.send_message(config.bot_nick, "fairBot RajaQ booting up fairBot")
+      time =
+        if is_nil(since) do
+          @offline_check
+        else
+          NaiveDateTime.from_iso8601!(since)
+          # Add fixed time to stream start
+          |> NaiveDateTime.add(@offline_check, :millisecond)
+          # Check how much time passed since now
+          |> NaiveDateTime.diff(NaiveDateTime.utc_now(), :millisecond)
+          # < 0 means it's started longer than 5 minutes ago, so send msg immediately
+          |> max(0)
+        end
+
+      Process.send_after(self(), :send_boot_msg, time)
     end
 
     {:noreply, %{config | stream_online: true}}
@@ -67,6 +80,11 @@ defmodule RajaQueue.TwitchAPI do
     end
   end
 
+  def handle_info(:send_boot_msg, config) do
+    Bot.send_message(config.bot_nick, "fairBot RajaQ booting up fairBot")
+    {:noreply, config}
+  end
+
   defp schedule_stream_check(time) do
     Process.send_after(self(), :stream_check, time)
   end
@@ -75,7 +93,7 @@ defmodule RajaQueue.TwitchAPI do
     handle_call(:stream_offline, config)
   end
 
-  defp process_response(%{"stream" => _}, config) do
-    handle_call(:stream_online, config)
+  defp process_response(%{"stream" => stream}, config) do
+    handle_call({:stream_online, Map.get(stream, "created_at")}, config)
   end
 end
