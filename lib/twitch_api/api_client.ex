@@ -11,10 +11,8 @@ defmodule RajaQueue.TwitchAPI.Client do
   plug Tesla.Middleware.JSON
   plug Tesla.Middleware.Logger
 
-  @kraken "/kraken"
-
   @spec get_stream_by_user(user :: binary()) :: Tesla.Env.result()
   def get_stream_by_user(user) do
-    get("#{@kraken}/streams/#{user}")
+    get("/kraken/streams/#{user}")
   end
 end

@@ -3,16 +3,6 @@
 use Mix.Config
 
 config :raja_queue,
-  bot: %{
-    :server => "irc.chat.twitch.tv",
-    :port => 6667,
-    :ssl? => false,
-    :nick => "rajaq",
-    :pass => "",
-    :user => "RajaQ",
-    :name => "RajaQueue Bot",
-    :channel => "#chronoes"
-  },
   state_file: "state.json"
 
 config :raja_queue, RajaQueue.TwitchAPI,
@@ -23,8 +13,6 @@ config :raja_queue, RajaQueue.TwitchAPI,
   user_id: "54989347"
 
 config :tesla, adapter: Tesla.Adapter.Hackney
-
-import_config "config.secret.exs"
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this
@@ -50,5 +38,5 @@ import_config "config.secret.exs"
 # by uncommenting the line below and defining dev.exs, test.exs and such.
 # Configuration from the imported file will override the ones defined
 # here (which is why it is important to import them last).
-#
-#     import_config "#{Mix.env}.exs"
+
+import_config "#{Mix.env()}.exs"
