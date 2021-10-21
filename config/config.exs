@@ -5,13 +5,6 @@ use Mix.Config
 config :raja_queue,
   state_file: "state.json"
 
-config :raja_queue, RajaQueue.TwitchAPI,
-  client_id: "69j22qmzkmubds5bj763fknl6bxr2r",
-  # Chronoes
-  # user_id: "25434785"
-  # Fairlight_Excalibur
-  user_id: "54989347"
-
 config :tesla, adapter: Tesla.Adapter.Hackney
 
 # This configuration is loaded before any dependency and is restricted

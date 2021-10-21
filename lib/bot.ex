@@ -2,6 +2,11 @@ defmodule RajaQueue.Bot do
   use GenServer
   require Logger
 
+  alias ExIRC.Client
+  alias ExIRC.SenderInfo
+
+  alias RajaQueue.TwitchAPI
+
   defmodule Config do
     defstruct server: nil,
               port: nil,
@@ -11,6 +16,17 @@ defmodule RajaQueue.Bot do
               name: nil,
               channel: nil,
               client: nil
+
+    @type t :: %__MODULE__{
+            server: String.t() | nil,
+            port: pos_integer() | nil,
+            pass: String.t() | nil,
+            nick: String.t() | nil,
+            user: String.t() | nil,
+            name: String.t() | nil,
+            channel: String.t() | nil,
+            client: Client.t() | nil
+          }
 
     @spec from_params(map :: map()) :: Config.t()
     def from_params(params) when is_map(params) do
@@ -22,11 +38,6 @@ defmodule RajaQueue.Bot do
       end)
     end
   end
-
-  alias ExIRC.Client
-  alias ExIRC.SenderInfo
-
-  alias RajaQueue.TwitchAPI
 
   def start_link(params, opts) when is_map(params) do
     config = Config.from_params(params)
@@ -106,7 +117,7 @@ defmodule RajaQueue.Bot do
 
   def handle_info({:joined, channel}, %Config{channel: conf_channel} = config) when conf_channel == channel do
     Logger.debug("Joined #{channel}")
-    TwitchAPI.check_stream_status()
+    # TwitchAPI.check_stream_status()
     {:noreply, config}
   end
 

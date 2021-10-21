@@ -10,7 +10,14 @@ defmodule RajaQueue.QueueState do
               queue_displayed: nil,
               state_file: ""
 
-    @spec from_json(binary) :: __MODULE__.t()
+    @type t :: %__MODULE__{
+            current_id: non_neg_integer(),
+            queue: [String.t()],
+            whitelist: [String.t()],
+            queue_displayed: pos_integer() | nil,
+            state_file: String.t()
+          }
+    @spec from_json(binary) :: State.t()
     def from_json(json) do
       %{"queue" => queue, "whitelist" => whitelist} = Jason.decode!(json)
 

@@ -14,7 +14,7 @@ defmodule RajaQueue do
 
     children = [
       {QueueState, name: QueueState, state_file: Application.get_env(:raja_queue, :state_file)},
-      {TwitchAPI, [[{:bot_nick, bot_name} | Application.get_env(:raja_queue, TwitchAPI)], [name: TwitchAPI]]},
+      # {TwitchAPI, [[{:bot_nick, bot_name} | Application.get_env(:raja_queue, TwitchAPI)], [name: TwitchAPI]]},
       %{id: bot_name, start: {Bot, :start_link, [bot, [name: bot_name]]}}
     ]
 
